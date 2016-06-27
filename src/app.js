@@ -1,5 +1,4 @@
 import {div, button} from '@cycle/dom';
-
 import {Observable} from 'rx';
 
 function view (count) {
