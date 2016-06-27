@@ -1,32 +1,64 @@
-import {div, button} from '@cycle/dom';
-import {Observable} from 'rx';
+import {div} from '@cycle/dom';
+import _ from 'lodash';
+import xs from 'xstream';
 
-function view (count) {
-  return (
-    div('.counter', [
-      div('.count', `Count: ${count}`),
-      button('.subtract', 'Subtract'),
-      button('.add', 'Add')
-    ])
+// TO DO:
+// X Render Hello World
+// X Render board
+// - Render knight
+// - Move knight to legal squares by clicking
+// - Move knight to legal squares by dragging
+//
+
+// function Knight () {
+
+// }
+
+function Board () {
+  return  _.range(0, 8).map(() =>
+    _.range(0, 8).map((square) => Square())
   );
 }
 
-export default function App ({DOM}) {
-  const add$ = DOM
-    .select('.add')
-    .events('click')
-    .map(ev => +1);
+function Square () {
+  return {
+    color: 'white'
+  }
+}
 
-  const subtract$ = DOM
-    .select('.subtract')
-    .events('click')
-    .map(ev => -1);
+function isBlack (rowIndex, squareIndex) {
+  if (rowIndex % 2 === 0 && squareIndex % 2 !== 0) {
+    return true;
+  } else if (rowIndex % 2 !== 0 && squareIndex % 2 === 0) {
+    return true;
+  } else {
+    return false;
+  }
+}
 
-  const count$ = add$.merge(subtract$)
-    .startWith(0)
-    .scan((total, change) => total + change);
+function renderRow (row, rowIndex) {
+  return div('.row', row.map((square, index) => renderSquare(square, rowIndex, index)));
+}
+
+function renderSquare (square, rowIndex, squareIndex) {
+  const black = isBlack(rowIndex, squareIndex);
+
+  return div(`.square ${black ? "black" : ""}`);
+}
+
+function view (state) {
+  return div('.board', state.board.map((row, index) => renderRow(row, index)));
+}
+
+export default function main ({DOM}) {
+  const initialState = {
+    board: Board(),
+    knightPosition: {x: 0, y: 0}
+  }
+
+  const state$ = xs.of(initialState);
 
   return {
-    DOM: count$.map(view)
-  };
+    DOM: state$.map(view)
+  }
 }

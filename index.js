@@ -1,20 +1,10 @@
-import {run} from '@cycle/core';
-import {makeDOMDriver} from '@cycle/dom';
-import {restart, restartable} from 'cycle-restart';
-import isolate from '@cycle/isolate';
+import {run} from '@cycle/xstream-run';
+import {makeDOMDriver, div} from '@cycle/dom';
 
-var app = require('./src/app').default;
+import app from './src/app';
 
 const drivers = {
-  DOM: restartable(makeDOMDriver('.app'), {pauseSinksWhileReplaying: false}),
+  DOM: makeDOMDriver('.app')
 };
 
-const {sinks, sources} = run(app, drivers);
-
-if (module.hot) {
-  module.hot.accept('./src/app', () => {
-    app = require('./src/app').default;
-
-    restart(app, drivers, {sinks, sources}, isolate);
-  });
-}
+run(app, drivers);
