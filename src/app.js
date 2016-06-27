@@ -5,14 +5,10 @@ import xs from 'xstream';
 // TO DO:
 // X Render Hello World
 // X Render board
-// - Render knight
+// X Render knight
 // - Move knight to legal squares by clicking
 // - Move knight to legal squares by dragging
 //
-
-// function Knight () {
-
-// }
 
 function Board () {
   return  _.range(0, 8).map(() =>
@@ -21,9 +17,7 @@ function Board () {
 }
 
 function Square () {
-  return {
-    color: 'white'
-  }
+  return {}
 }
 
 function isBlack (rowIndex, squareIndex) {
@@ -36,18 +30,27 @@ function isBlack (rowIndex, squareIndex) {
   }
 }
 
-function renderRow (row, rowIndex) {
-  return div('.row', row.map((square, index) => renderSquare(square, rowIndex, index)));
+function hasKnight (knightPosition, rowIndex, squareIndex) {
+  if (rowIndex === knightPosition.x && squareIndex === knightPosition.y) {
+    return true;
+  }
+
+  return false;
 }
 
-function renderSquare (square, rowIndex, squareIndex) {
-  const black = isBlack(rowIndex, squareIndex);
+function renderRow (row, rowIndex, state) {
+  return div('.row', row.map((square, index) => renderSquare(square, rowIndex, index, state)));
+}
 
-  return div(`.square ${black ? "black" : ""}`);
+function renderSquare (square, rowIndex, squareIndex, state) {
+  const black = isBlack(rowIndex, squareIndex);
+  const knight = hasKnight(state.knightPosition, rowIndex, squareIndex);
+
+  return div(`.square ${black ? "black" : ""} ${knight ? "knight" : ""}`);
 }
 
 function view (state) {
-  return div('.board', state.board.map((row, index) => renderRow(row, index)));
+  return div('.board', state.board.map((row, index) => renderRow(row, index, state)));
 }
 
 export default function main ({DOM}) {
@@ -59,6 +62,6 @@ export default function main ({DOM}) {
   const state$ = xs.of(initialState);
 
   return {
-    DOM: state$.map(view)
+    DOM: state$.map(state => view(state))
   }
 }

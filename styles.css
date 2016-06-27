@@ -35,3 +35,8 @@ body {
 .black {
   background: black;
 }
+
+.knight {
+ background: url('knight.png');
+ background-size: cover;
+}
