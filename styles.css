@@ -48,3 +48,7 @@ body {
   height: 30px;
   position: absolute;
 }
+
+.legal-move {
+  background-color: lime !important;
+}

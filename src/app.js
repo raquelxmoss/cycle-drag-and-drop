@@ -56,11 +56,20 @@ function renderRow (row, rowIndex, state) {
   return div('.row', row.map((square, index) => renderSquare(square, rowIndex, index, state)));
 }
 
+function highlightLegalSquare (state, rowIndex, squareIndex) {
+  const currentSquare = {x: rowIndex, y: squareIndex};
+
+  if (!_.isEqual(state.mouseIsOver, currentSquare)) { return; }
+
+  return legalMove(state.knightPosition, currentSquare) && state.knightIsDragging;
+}
+
 function renderSquare (square, rowIndex, squareIndex, state) {
   const knight = hasKnight(state.knightPosition, rowIndex, squareIndex);
+  const highlight = highlightLegalSquare(state, rowIndex, squareIndex);
 
   return div(
-    `.square ${knight ? 'knight' : ''}`,
+    `.square ${knight ? 'knight' : ''} ${highlight ? 'legal-move' : ''}`,
     {
       attrs: {
         'data-row': rowIndex,
@@ -77,7 +86,7 @@ function renderDraggingKnight (isDragging, mousePosition) {
 
   const style = {
     top: `${mousePosition.y - 10}px`,
-    left: `${mousePosition.x + 20}px`,
+    left: `${mousePosition.x + 10}px`,
   };
 
   return div('.square .draggingKnight', {style});
@@ -112,6 +121,14 @@ function dropKnight (knightPosition) {
   };
 }
 
+function highlightLegalSquares (squarePosition) {
+  return (state) => {
+    const isLegal = legalMove(state.knightPosition, squarePosition);
+
+    return state;
+  };
+}
+
 export default function main ({DOM, Mouse}) {
   const knightMouseDown$ = DOM
     .select('.knight')
@@ -120,6 +137,10 @@ export default function main ({DOM, Mouse}) {
   const squareMouseUp$ = DOM
     .select('.square')
     .events('mouseup');
+
+  const squareMouseOver$ = DOM
+    .select('.square')
+    .events('mouseover');
 
   const dragKnight$ = knightMouseDown$
     .map(dragKnight);
@@ -134,20 +155,31 @@ export default function main ({DOM, Mouse}) {
     )
     .map(dropKnight);
 
+  const mouseIsOver$ = squareMouseOver$
+    .map(ev => {
+      const x = parseInt(ev.target.getAttribute('data-row'));
+      const y = parseInt(ev.target.getAttribute('data-col'));
+
+      return {x, y};
+    })
+    .map((pos) => (state) => Object.assign({}, state, {mouseIsOver: pos}));
+
   const mousePosition$ = Mouse.positions()
     .map((pos) => (state) => Object.assign({}, state, {mousePosition: pos}));
 
   const action$ = xs.merge(
     mousePosition$,
     dragKnight$,
-    dropKnight$
+    dropKnight$,
+    mouseIsOver$
   );
 
   const initialState = {
     board: Board(),
     knightPosition: {x: 0, y: 1},
     knightIsDragging: false,
-    mousePosition: {x: 0, y: 0}
+    mousePosition: {x: 0, y: 0},
+    mouseIsOver: {x: 0, y: 0}
   };
 
   const state$ = action$
@@ -156,7 +188,7 @@ export default function main ({DOM, Mouse}) {
   const preventDefault$ = xs.merge (
     squareMouseUp$,
     knightMouseDown$
-  )
+  );
 
   return {
     DOM: state$.map(state => view(state)),
