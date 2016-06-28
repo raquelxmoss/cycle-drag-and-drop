@@ -21,6 +21,7 @@
     "@cycle/core": "^7.0.0-rc8",
     "@cycle/dom": "^10.0.0-rc34",
     "@cycle/xstream-run": "^3.0.2",
+    "lodash": "^4.13.1",
     "xstream": "^5.0.6"
   },
   "devDependencies": {

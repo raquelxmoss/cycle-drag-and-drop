@@ -7,11 +7,11 @@ import xs from 'xstream';
 // X Render board
 // X Render knight
 // X Move knight to legal squares by clicking
-// - Move knight to legal squares by dragging
-//
+// X Move knight to legal squares by dragging
+// - Give visual feedback that knight is 'moving'
 
 function Board () {
-  return  _.range(0, 8).map(() =>
+  return _.range(0, 8).map(() =>
     _.range(0, 8).map((square) => Square())
   );
 }
@@ -20,25 +20,14 @@ function Square () {
   return {};
 }
 
-function isBlack (rowIndex, squareIndex) {
-  if (rowIndex % 2 === 0 && squareIndex % 2 !== 0) {
-    return true;
-  } else if (rowIndex % 2 !== 0 && squareIndex % 2 === 0) {
-    return true;
-  } else {
-    return false;
-  }
-}
 
 function hasKnight (knightPosition, rowIndex, squareIndex) {
-  if (rowIndex === knightPosition.x && squareIndex === knightPosition.y) {
-    return true;
-  }
-
-  return false;
+  return rowIndex === knightPosition.x && squareIndex === knightPosition.y;
 }
 
 function legalMove (knightPosition, squareCoordinates) {
+  if (_.isEqual(knightPosition, squareCoordinates)) { return false; }
+
   const moves = [
     {x: -2, y: -1},
     {x: -2, y: 1},
@@ -50,14 +39,16 @@ function legalMove (knightPosition, squareCoordinates) {
     {x: 1, y: 2}
   ];
 
-  const isLegal = moves.map(move => {
-    return _.isEqual(squareCoordinates, { x: move.x + knightPosition.x, y: move.y + knightPosition.y });
-  })
-  .filter(isLegal => isLegal === true)[0];
+  const potentialMoves = moves.map(
+    move => ({
+      x: move.x + knightPosition.x,
+      y: move.y + knightPosition.y
+    })
+  );
 
-  if (isLegal) { return true; }
+  const isLegal = potentialMoves.some(potentialMove => _.isEqual(potentialMove, squareCoordinates));
 
-  return false;
+  return isLegal;
 }
 
 function renderRow (row, rowIndex, state) {
@@ -65,11 +56,10 @@ function renderRow (row, rowIndex, state) {
 }
 
 function renderSquare (square, rowIndex, squareIndex, state) {
-  const black = isBlack(rowIndex, squareIndex);
   const knight = hasKnight(state.knightPosition, rowIndex, squareIndex);
 
   return div(
-    `.square ${black ? 'black' : ''} ${knight ? 'knight' : ''}`,
+    `.square ${knight ? 'knight' : ''}`,
     {
       attrs: {
         'data-row': rowIndex,
@@ -79,55 +69,84 @@ function renderSquare (square, rowIndex, squareIndex, state) {
   );
 }
 
-function view (state) {
-  return div('.board', state.board.map((row, index) => renderRow(row, index, state)));
-};
+function renderDraggingKnight (isDragging, mousePosition) {
+  if (!isDragging) {
+    return div();
+  }
 
-function selectKnight () {
-  return (state) => Object.assign({}, state, {knightSelected: !state.knightSelected});
+  const style = {
+    top: `${mousePosition.y - 10}px`,
+    left: `${mousePosition.x + 20}px`,
+  };
+
+  return div('.square .draggingKnight', {style});
 }
 
-function placeKnight (knightPosition) {
+function view (state) {
+  return div(
+    '.container',
+    [
+      renderDraggingKnight(state.knightIsDragging, state.mousePosition),
+      div(
+        '.board',
+        state.board.map((row, index) => renderRow(row, index, state))
+      )
+    ]
+  );
+};
+
+function dragKnight () {
+  return (state) => Object.assign({}, state, {knightIsDragging: true});
+}
+
+function dropKnight (knightPosition) {
   return (state) => {
     const canMove = legalMove(state.knightPosition, knightPosition);
 
-    if (!state.knightSelected || !canMove) { return state; }
+    if (!state.knightIsDragging || !canMove) {
+      return Object.assign({}, state, {knightIsDragging: false, knightPosition: state.knightPosition});
+    }
 
-    return Object.assign({}, state, {knightSelected: false, knightPosition});
+    return Object.assign({}, state, {knightIsDragging: false, knightPosition});
   };
 }
 
-export default function main ({DOM}) {
-  const knight$ = DOM
+export default function main ({DOM, Mouse}) {
+  const knightMouseDown$ = DOM
     .select('.knight')
-    .events('click');
+    .events('mousedown');
 
-  const squareClick$ = DOM
-    .select('.square:not(.knight)')
-    .events('click');
+  const squareMouseUp$ = DOM
+    .select('.square')
+    .events('mouseup');
 
-  const selectKnight$ = knight$
-    .map(_ => selectKnight());
+  const dragKnight$ = knightMouseDown$
+    .map(dragKnight);
 
-  const placeKnight$ = squareClick$
-  .map(ev => {
-      const x = parseInt(ev.target.getAttribute('data-row'));
-      const y = parseInt(ev.target.getAttribute('data-col'));
+  const dropKnight$ = squareMouseUp$
+    .map(ev => {
+        const x = parseInt(ev.target.getAttribute('data-row'));
+        const y = parseInt(ev.target.getAttribute('data-col'));
 
-      return {x, y};
-    }
-  )
-  .map(coord => placeKnight(coord));
+        return {x, y};
+      }
+    )
+    .map(dropKnight);
+
+  const mousePosition$ = Mouse.positions()
+    .map((pos) => (state) => Object.assign({}, state, {mousePosition: pos}));
 
   const action$ = xs.merge(
-    selectKnight$,
-    placeKnight$
+    mousePosition$,
+    dragKnight$,
+    dropKnight$
   );
 
   const initialState = {
     board: Board(),
     knightPosition: {x: 0, y: 1},
-    knightSelected: false
+    knightIsDragging: false,
+    mousePosition: {x: 0, y: 0}
   };
 
   const state$ = action$
