@@ -17,7 +17,7 @@ function Board () {
 }
 
 function Square () {
-  return {}
+  return {};
 }
 
 function isBlack (rowIndex, squareIndex) {
@@ -48,7 +48,7 @@ function legalMove (knightPosition, squareCoordinates) {
     {x: -1, y: 2},
     {x: 1, y: -2},
     {x: 1, y: 2}
-  ]
+  ];
 
   const isLegal = moves.map(move => {
     return _.isEqual(squareCoordinates, { x: move.x + knightPosition.x, y: move.y + knightPosition.y });
@@ -69,11 +69,11 @@ function renderSquare (square, rowIndex, squareIndex, state) {
   const knight = hasKnight(state.knightPosition, rowIndex, squareIndex);
 
   return div(
-    `.square ${black ? "black" : ""} ${knight ? "knight" : ""}`,
+    `.square ${black ? 'black' : ''} ${knight ? 'knight' : ''}`,
     {
       attrs: {
-        "data-row": rowIndex,
-        "data-col": squareIndex
+        'data-row': rowIndex,
+        'data-col': squareIndex
       }
     }
   );
@@ -91,30 +91,30 @@ function placeKnight (knightPosition) {
   return (state) => {
     const canMove = legalMove(state.knightPosition, knightPosition);
 
-    if (!state.knightSelected || !canMove) { return state }
+    if (!state.knightSelected || !canMove) { return state; }
 
     return Object.assign({}, state, {knightSelected: false, knightPosition});
-  }
+  };
 }
 
 export default function main ({DOM}) {
   const knight$ = DOM
     .select('.knight')
-    .events('click')
+    .events('click');
 
   const squareClick$ = DOM
     .select('.square:not(.knight)')
-    .events('click')
+    .events('click');
 
   const selectKnight$ = knight$
-    .map(_ => selectKnight())
+    .map(_ => selectKnight());
 
   const placeKnight$ = squareClick$
   .map(ev => {
       const x = parseInt(ev.target.getAttribute('data-row'));
       const y = parseInt(ev.target.getAttribute('data-col'));
 
-      return {x, y}
+      return {x, y};
     }
   )
   .map(coord => placeKnight(coord));
