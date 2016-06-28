@@ -6,7 +6,7 @@ import xs from 'xstream';
 // X Render Hello World
 // X Render board
 // X Render knight
-// - Move knight to legal squares by clicking
+// X Move knight to legal squares by clicking
 // - Move knight to legal squares by dragging
 //
 
@@ -38,6 +38,28 @@ function hasKnight (knightPosition, rowIndex, squareIndex) {
   return false;
 }
 
+function legalMove (knightPosition, squareCoordinates) {
+  const moves = [
+    {x: -2, y: -1},
+    {x: -2, y: 1},
+    {x: 2, y: -1},
+    {x: 2, y: 1},
+    {x: -1, y: -2},
+    {x: -1, y: 2},
+    {x: 1, y: -2},
+    {x: 1, y: 2}
+  ]
+
+  const isLegal = moves.map(move => {
+    return _.isEqual(squareCoordinates, { x: move.x + knightPosition.x, y: move.y + knightPosition.y });
+  })
+  .filter(isLegal => isLegal === true)[0];
+
+  if (isLegal) { return true; }
+
+  return false;
+}
+
 function renderRow (row, rowIndex, state) {
   return div('.row', row.map((square, index) => renderSquare(square, rowIndex, index, state)));
 }
@@ -46,22 +68,72 @@ function renderSquare (square, rowIndex, squareIndex, state) {
   const black = isBlack(rowIndex, squareIndex);
   const knight = hasKnight(state.knightPosition, rowIndex, squareIndex);
 
-  return div(`.square ${black ? "black" : ""} ${knight ? "knight" : ""}`);
+  return div(
+    `.square ${black ? "black" : ""} ${knight ? "knight" : ""}`,
+    {
+      attrs: {
+        "data-row": rowIndex,
+        "data-col": squareIndex
+      }
+    }
+  );
 }
 
 function view (state) {
   return div('.board', state.board.map((row, index) => renderRow(row, index, state)));
+};
+
+function selectKnight () {
+  return (state) => Object.assign({}, state, {knightSelected: !state.knightSelected});
+}
+
+function placeKnight (knightPosition) {
+  return (state) => {
+    const canMove = legalMove(state.knightPosition, knightPosition);
+
+    if (!state.knightSelected || !canMove) { return state }
+
+    return Object.assign({}, state, {knightSelected: false, knightPosition});
+  }
 }
 
 export default function main ({DOM}) {
+  const knight$ = DOM
+    .select('.knight')
+    .events('click')
+
+  const squareClick$ = DOM
+    .select('.square:not(.knight)')
+    .events('click')
+
+  const selectKnight$ = knight$
+    .map(_ => selectKnight())
+
+  const placeKnight$ = squareClick$
+  .map(ev => {
+      const x = parseInt(ev.target.getAttribute('data-row'));
+      const y = parseInt(ev.target.getAttribute('data-col'));
+
+      return {x, y}
+    }
+  )
+  .map(coord => placeKnight(coord));
+
+  const action$ = xs.merge(
+    selectKnight$,
+    placeKnight$
+  );
+
   const initialState = {
     board: Board(),
-    knightPosition: {x: 0, y: 0}
-  }
+    knightPosition: {x: 0, y: 1},
+    knightSelected: false
+  };
 
-  const state$ = xs.of(initialState);
+  const state$ = action$
+    .fold((state, action) => action(state), initialState);
 
   return {
     DOM: state$.map(state => view(state))
-  }
+  };
 }
