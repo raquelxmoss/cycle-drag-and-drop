@@ -12,7 +12,6 @@ function Square () {
   return {};
 }
 
-
 function hasKnight (knightPosition, rowIndex, squareIndex) {
   return rowIndex === knightPosition.x && squareIndex === knightPosition.y;
 }
@@ -109,14 +108,6 @@ function dropKnight (knightPosition) {
     }
 
     return Object.assign({}, state, {knightIsDragging: false, knightPosition});
-  };
-}
-
-function highlightLegalSquares (squarePosition) {
-  return (state) => {
-    const isLegal = legalMove(state.knightPosition, squarePosition);
-
-    return state;
   };
 }
 
