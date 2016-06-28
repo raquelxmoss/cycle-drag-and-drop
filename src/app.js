@@ -8,7 +8,8 @@ import xs from 'xstream';
 // X Render knight
 // X Move knight to legal squares by clicking
 // X Move knight to legal squares by dragging
-// - Give visual feedback that knight is 'moving'
+// X Give visual feedback that knight is 'moving'
+// - Give visual feedback when knight is over legal squares
 
 function Board () {
   return _.range(0, 8).map(() =>
@@ -152,7 +153,13 @@ export default function main ({DOM, Mouse}) {
   const state$ = action$
     .fold((state, action) => action(state), initialState);
 
+  const preventDefault$ = xs.merge (
+    squareMouseUp$,
+    knightMouseDown$
+  )
+
   return {
-    DOM: state$.map(state => view(state))
+    DOM: state$.map(state => view(state)),
+    PreventDefault: preventDefault$
   };
 }
