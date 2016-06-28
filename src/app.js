@@ -2,15 +2,6 @@ import {div} from '@cycle/dom';
 import _ from 'lodash';
 import xs from 'xstream';
 
-// TO DO:
-// X Render Hello World
-// X Render board
-// X Render knight
-// X Move knight to legal squares by clicking
-// X Move knight to legal squares by dragging
-// X Give visual feedback that knight is 'moving'
-// - Give visual feedback when knight is over legal squares
-
 function Board () {
   return _.range(0, 8).map(() =>
     _.range(0, 8).map((square) => Square())
